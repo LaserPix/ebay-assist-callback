@@ -18,26 +18,33 @@
     </div>
 
     <script>
-        // Immediately try to perform the redirect.
         (function() {
-            // Get the query parameters from the browser's URL bar.
-            const params = new URLSearchParams(window.location.search);
-            const code = params.get('code');
-            const state = params.get('state');
+            // eBay's auth code can contain a '#' which breaks standard URL parsing.
+            // We must manually reconstruct the URL by looking at both the search and hash parts.
+            const searchParams = new URLSearchParams(window.location.search);
+            const hashString = window.location.hash.substring(1); // Remove the leading '#'
 
-            // If we have an authorization code, construct the custom URL and redirect.
-            if (code) {
-                const redirectUrl = `ebay-assist://oauth-callback?code=${code}&state=${state}`;
-                
-                // Update the fallback link on the page.
+            const code = searchParams.get('code');
+            let state = searchParams.get('state');
+            
+            // If the state is not in the search part, it's because the '#' in the code broke it.
+            // In that case, the state will be in the hash part.
+            if (!state) {
+                const hashParams = new URLSearchParams(hashString);
+                state = hashParams.get('state');
+            }
+
+            if (code && state) {
+                // Reconstruct the full, but now correctly parsable, redirect URL.
+                // We encode the problematic hash from the code to prevent it from breaking our own URL.
+                const fullCode = code + (hashString.split('&')[0] ? '#' + hashString.split('&')[0] : '');
+                const redirectUrl = `ebay-assist://oauth-callback?code=${encodeURIComponent(fullCode)}&state=${state}`;
+
                 document.getElementById('redirect-link').href = redirectUrl;
-                
-                // Perform the automatic redirect.
                 window.location.replace(redirectUrl);
             } else {
-                // Handle the case where the user denied access.
-                const error = params.get('error');
-                const errorDescription = params.get('error_description');
+                const error = searchParams.get('error');
+                const errorDescription = searchParams.get('error_description');
                 if (error) {
                     const redirectUrl = `ebay-assist://oauth-callback?error=${error}&error_description=${errorDescription}&state=${state}`;
                     document.getElementById('redirect-link').href = redirectUrl;
