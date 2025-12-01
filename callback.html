@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>eBay Assist Authorization</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-align: center; padding-top: 5em; background-color: #f5f5f5; color: #333; }
+        .container { max-width: 600px; margin: auto; padding: 2em; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        a { color: #0060e0; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Authorization Received</h1>
+        <p>You can now return to the eBay Assist application. It is safe to close this browser tab.</p>
+        <p><a id="redirect-link" href="#">Click here if you are not redirected automatically.</a></p>
+    </div>
+
+    <script>
+        // Immediately try to perform the redirect.
+        (function() {
+            // Get the query parameters from the browser's URL bar.
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const state = params.get('state');
+
+            // If we have an authorization code, construct the custom URL and redirect.
+            if (code) {
+                const redirectUrl = `ebay-assist://oauth-callback?code=${code}&state=${state}`;
+                
+                // Update the fallback link on the page.
+                document.getElementById('redirect-link').href = redirectUrl;
+                
+                // Perform the automatic redirect.
+                window.location.replace(redirectUrl);
+            } else {
+                // Handle the case where the user denied access.
+                const error = params.get('error');
+                const errorDescription = params.get('error_description');
+                if (error) {
+                    const redirectUrl = `ebay-assist://oauth-callback?error=${error}&error_description=${errorDescription}&state=${state}`;
+                    document.getElementById('redirect-link').href = redirectUrl;
+                    window.location.replace(redirectUrl);
+                }
+            }
+        })();
+    </script>
+
+</body>
+</html>
